@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>USG Clinic System</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* ================= GLOBAL & BACKGROUND ================= */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: auto; /* prevent page scroll */
+}
+
+body{
+    background: url("/static/images/bg_img.png") no-repeat center/cover; /* full screen bg image */
+    background-size: cover; /* ensure image fits screen */
+    font-family: 'Segoe UI', sans-serif;
+    padding:15px;
+}
+
+/* ================= GLASS EFFECT ================= */
+.glass{
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(14px);
+    border-radius: 50px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.25);
+    color:#fff;
+}
+
+/* ================= FORM ================= */
+.form-compact label{
+    font-size:12px;
+}
+.form-compact .form-control{
+    height:36px;
+    font-size:13px;
+    border-radius:8px;
+}
+
+/* ================= TABLE ================= */
+.table thead{
+    background: rgba(79, 77, 77, 0.25);
+}
+.table tbody tr td{
+    vertical-align: middle;
+}
+.table td, .table th {
+    padding:3px 6px;
+    font-size:12px;
+}
+#report_table_body td {
+    color: #000 !important;
+    background-color: transparent !important;
+}
+.table-hover tbody tr:hover {
+    background-color: #f1f5ff; 
+    cursor: pointer;
+    
+}
+.table-section {
+    margin-top: 60px;            /* form ke thora qareeb */
+    padding: 0 20px;
+}
+
+.table-wrapper {
+    max-height: calc(100vh - 420px); /* screen ke hisaab se */
+    overflow-y: auto;
+}
+/* Odd rows */
+
+
+/* Even rows */
+#report_table_body  {
+    background-color: transparent; /* white */
+}
+
+.table-responsive { max-height: calc(100vh - 300px); overflow-y: auto; }
+
+/* ================= SUMMARY ================= */
+.summary-wrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.summary-card{
+    min-width:110px;
+    text-align:center;
+    padding:8px;
+    border-radius:12px;
+}
+.collapse-horizontal{
+    display:flex;
+    overflow:hidden;
+    width:0;
+    transition:width .4s ease;
+}
+.collapse-horizontal.show{
+    width:240px;
+}
+/* ================= FORM POSITIONING CENTER ================= */
+#form-container {
+    position: relative;       /* normal flow */
+    margin: 0 auto 20px auto; 
+    left: 100px;              /* slightly left shift */
+    top: -100px;                /* slightly top */
+    width: 700px;             /* form width */
+    max-width: 95%;           /* responsive on small screens */
+}
+
+/* ================= MOBILE ================= */
+@media(max-width:768px){
+    .summary-wrap {
+    display: flex;
+    justify-content: flex-end !important; /* RIGHT side */
+}
+
+    .form-row{
+        flex-direction:column;
+        gap:10px;
+    }
+}
+
+/* ================= HIGHLIGHT NEW ROW ================= */
+.new-row {
+    background-color: #d4edda; /* light green */
+    transition: background-color 3s ease;
+}
+
+/* ================= ONE-PAGE LAYOUT ================= */
+.container-fluid {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.row.g-4 {
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.table-responsive {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+.table-hover tbody tr:hover {
+    background-color: #fcfcfc !important; /* Bootstrap blue */
+    color: #fff !important;
+    
+}
+
+/* ================= seach text box ================= */
+
+#tableSearch {
+    height: 40px;
+    font-size: 16px;
+    width: 30%;
+}
+#datePicker {
+    height: 40px;
+    font-size: 16px;
+    width: 30%;
+}
+#fetchToday {
+    height: 40px;
+    font-size: 16px;
+}
+
+#report_table_body tr:nth-child(odd) { background-color: #f9f9f9; }
+#report_table_body tr:nth-child(even) { background-color: #ffffff; } 
+
+
+/* ================= SUCCESS MESSAGE ================= */
+#success-msg {
+    position: fixed;          
+    top: 20px;                
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;            
+    display: none;
+    min-width: 250px;         
+    text-align: center;
+
+    background-color: #198754; /* bootstrap success green */
+    color: white;
+    padding: 10px 20px;       /* thoda padding */
+    border-radius: 50px;       /* fully rounded */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* subtle shadow */
+    font-weight: 500;
+    font-size: 14px;
+}
+
+
+</style>
+
+</head>
+
+<body>
+<div class="container-fluid">
+
+<!-- ================= HEADER ================= -->
+<div class="text-center mb-3">
+    <h1 class="fw-bold text-white">USG Clinic Report System</h1>
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<div class="summary-wrap mb-4 justify-content-start">
+
+    <!-- TODAY -->
+    <div class="glass summary-card">
+        <small>Today</small>
+        <h5 id="today_count">0</h5>
+    </div>
+
+    <!-- WEEK/MONTH -->`   
+    <div id="weekMonthWrap" class="collapse-horizontal ">
+        <div class="glass summary-card me-2">
+            <small>Week</small>
+            <h5 id="week_count">0</h5>
+        </div>
+        <div class="glass summary-card">
+            <small>Month</small>
+            <h5 id="month_count">0</h5>
+        </div>
+    </div>
+
+    <!-- TOGGLE BUTTON -->
+    <button id="toggleSummary" class="btn btn-sm btn-outline-light ms-auto">
+        More
+    </button>
+</div>
+
+<!-- ================= ADD REPORT FORM ================= -->
+<div id="form-container" class="glass p-4">
+    <h6>Add Report</h6>
+    <form id="upload_form" enctype="multipart/form-data" class="form-compact">
+        <div class="d-flex form-row gap-2 mb-2">
+
+            <div class="flex-fill">
+                <label>Word File</label>
+                <input type="file" id="word_file" name="word_file" class="form-control" accept=".docx" required>
+            </div>
+            <div class="flex-fill">
+                <label>Patient Name</label>
+                <input id="patient_name" name="patient_name" class="form-control" required>
+            </div>
+            <div class="flex-fill">
+                <label>WhatsApp</label>
+                <input type="text"
+                       id="whatsapp_number"
+                       name="whatsapp_number"
+                       class="form-control"
+                       value="+92"
+                       placeholder="+923001234567"
+                       required
+                       maxlength="13"
+                       pattern="^\+92\d{10}$"
+                       title="WhatsApp number must be in format +923001234567">
+            </div>
+
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" id="submit_btn">Add Report</button>
+    </form>
+
+    <!-- SUCCESS MESSAGE -->
+    <div id="success-msg" class="alert alert-success"></div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="col-12" style="margin-top: -150px;">
+<div class="glass p-4 mt-4">
+<div class="d-flex justify-content-between mb-2 flex-wrap gap-2">
+<h5>Reports</h5>
+ <input type="text" id="tableSearch" class="form-control mb-2" placeholder="Search patient, WhatsApp or file">
+    <button type="button" class="btn btn-sm btn-outline-light" id="fetchToday">Fetch Today</button>
+    <input type="date" id="datePicker" class="form-control form-control-sm" >
+    <div class="d-flex gap-2">
+        
+        <button class="btn btn-sm btn-outline-light" onclick="fetchByDate()" id="fetchToday">Search</button>
+    </div>
+</div>
+
+<div class="table-responsive" >
+    <table class="table table-bordered table-striped table-hover text-dark">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Patient Name</th>
+            <th>Report</th>
+            <th>WhatsApp</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Action</th> <!-- New column for Resend button -->
+        </tr>
+    </thead>
+    <tbody id="report_table_body"></tbody>
+</table>
+<!-- <table class="table table-bordered table-striped table-hover text-dark">
+    
+<thead>
+<tr>
+    <th>#</th><th>Patient Name</th><th >Report</th><th>WhatsApp</th><th>Date</th><th>status</th> 
+</tr>
+
+</thead>
+<tbody id="report_table_body"></tbody>
+</table> -->
+</div>
+
+<!-- PAGINATION -->
+<div class="text-center mt-2">
+    <button class="btn btn-sm btn-outline-light" onclick="prevPage()">Prev</button>
+    <span id="pageInfo" class="mx-2"></span>
+    <button class="btn btn-sm btn-outline-light" onclick="nextPage()">Next</button>
+</div>
+
+</div>
+</div>
+
+</div>
+
+<!-- ================= JS ================= -->
+
+<script>
+/* ================= GLOBAL STATE ================= */
+let reports = [];
+let page = 1;
+const size = 20;
+
+/* ================= NORMALIZER ================= */
+/* Har report ko ek hi format me convert kare */
+function normalizeReport(r) {
+    return {
+        id: r.id, // assuming id is always present 
+        patient_name: r.patient_name || r.patient || "",
+        file_name: r.file_name || r.report_file || "",
+        whatsapp_number: r.whatsapp_number || r.whatsapp || "",
+        created_at: r.created_at || r.date || "",
+        status: r.status || "pending"      // ✅ add status 
+    };
+}
+
+
+/* ================= FILE → PATIENT NAME ================= */
+word_file.onchange = () => {
+    if (word_file.files.length > 0) {
+        patient_name.value =
+            word_file.files[0].name.replace(/\.[^/.]+$/, "");
+    }
+};
+
+// /* ================= ADD REPORT ================= */
+// upload_form.onsubmit = async (e) => {
+//     e.preventDefault();
+
+//     const fd = new FormData(upload_form);
+//     const res = await fetch("/add_report", {
+//         method: "POST",
+//         body: fd
+//     });
+
+//     const data = await res.json();
+//     showSuccessMessage(data.message);
+
+//     if (data.status === "success") {
+//         upload_form.reset();
+
+//         // ✅ normalize before push
+//         const newReport = normalizeReport(data.report);
+//         reports.unshift(newReport);
+
+//         page = 1;
+//         render();
+//     }
+// };
+
+/* ================= ADD REPORT ================= */
+upload_form.onsubmit = async (e) => {
+    e.preventDefault();
+
+    const btn = document.getElementById("submit_btn"); // add report button
+    btn.disabled = true;             // Disable button immediately
+    btn.innerText = 'Processing...'; // Optional: show message
+
+    try {
+        const fd = new FormData(upload_form);
+        const res = await fetch("/add_report", {
+            method: "POST",
+            body: fd
+        });
+
+        const data = await res.json();
+        showSuccessMessage(data.message);
+
+        if (data.status === "success") {
+            upload_form.reset();
+
+            // ✅ normalize before push
+            const newReport = normalizeReport(data.report);
+            reports.unshift(newReport);
+
+            page = 1;
+            render();
+        }
+    } catch (err) {
+        console.error("Add report failed:", err);
+        showSuccessMessage("Failed to add report. Try again.");
+    } finally {
+        btn.disabled = false;         // Enable button again after completion
+        btn.innerText = 'Add Report'; // Restore button text
+    }
+};
+
+
+async function fetchToday() {
+    const today = new Date().toISOString().slice(0,10); // yyyy-mm-dd
+    const res = await fetch(`/get_reports?selected_date=${today}`);
+    const data = await res.json();
+
+    // ✅ normalize all fetched reports
+    reports = (data.reports || data).map(normalizeReport);
+
+    page = 1;
+    render();
+}
+
+document.getElementById("fetchToday").onclick = fetchToday;
+
+/* ================= FETCH BY DATE ================= */
+async function fetchByDate() {
+    const d = datePicker.value;
+    if (!d) return alert("Select date");
+
+    const res = await fetch(`/get_reports?selected_date=${d}`);
+    const data = await res.json();
+
+    reports = (data.reports || []).map(normalizeReport);
+    page = 1;
+    render();
+}
+
+// /* ================= RENDER TABLE ================= */
+
+/* ================= SUMMARY ================= */
+async function updateSummary() {
+    const r = await fetch("/summary_counts");
+    const d = await r.json();
+    today_count.innerText = d.today;
+    week_count.innerText = d.week;
+    month_count.innerText = d.month;
+}
+
+/* ================= SUCCESS MESSAGE ================= */
+let successTimeout;
+function showSuccessMessage(msg) {
+    const el = document.getElementById("success-msg");
+    el.innerText = msg;
+    el.style.display = "block";
+
+    clearTimeout(successTimeout);
+    successTimeout = setTimeout(() => {
+        el.style.display = "none";
+    }, 3000);
+}
+
+/* ================= INIT ================= */
+updateSummary();
+// fetchToday(); // agar page load par chahiye
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const toggleBtn = document.getElementById("toggleSummary");
+    const wrap = document.getElementById("weekMonthWrap");
+
+    toggleBtn.addEventListener("click", () => {
+        wrap.classList.toggle("show");
+
+        toggleBtn.innerText = wrap.classList.contains("show")
+            ? "Less"
+            : "More";
+    });
+});
+
+
+document.getElementById('tableSearch').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    reports.forEach(r => r._show = (
+        r.patient_name.toLowerCase().includes(query) ||
+        r.file_name.toLowerCase().includes(query) ||
+        r.whatsapp_number.includes(query)
+    ));
+    render();
+});
+
+
+// function render() {
+//     const tbody = report_table_body;
+//     tbody.innerHTML = "";
+
+//     const filtered = reports.filter(r => r._show !== false);
+//     const start = (page - 1) * size;
+//     const slice = filtered.slice(start, start + size);
+
+//     if (!slice.length) {
+//         tbody.innerHTML =
+//             `<tr><td colspan="5" class="text-center text-muted">No data</td></tr>`;
+//         return;
+//     }
+
+//     const total = filtered.length;
+
+//     slice.forEach((r, i) => {
+//         const tr = document.createElement("tr");
+//         const serial = total - (start + i);
+//         let status = (r.status || "").trim().toLowerCase();
+//         let color;
+//         if (status === "sent") color = "green";
+//         else if (status === "pending") color = "orange";
+//         else if (status === "failed") color = "red";
+//         else color = "black"; // default    
+//         tr.innerHTML = `
+//             <td>${serial}</td>
+//             <td>${r.patient_name}</td>
+//             <td>
+               
+//                 <a href="/static/pdf_reports/${encodeURIComponent(r.file_name.split("/").pop())}" target="_blank" class="text-black">
+//                     ${r.file_name.split("/").pop()}
+//                 </a>
+//             </td>
+//             <td>${r.whatsapp_number}</td>
+//             <td>${r.created_at}</td>
+//             <td style="color:${color}">${r.status}</td>
+//         `;
+//         tbody.appendChild(tr);
+//     });
+
+//     pageInfo.innerText = `Page ${page}`;
+// }
+
+function render() {
+    const tbody = report_table_body;
+    tbody.innerHTML = "";
+
+    const filtered = reports.filter(r => r._show !== false);
+    const start = (page - 1) * size;
+    const slice = filtered.slice(start, start + size);
+
+    if (!slice.length) {
+        tbody.innerHTML =
+            `<tr><td colspan="7" class="text-center text-muted">No data</td></tr>`;
+        return;
+    }
+
+    const total = filtered.length;
+
+    slice.forEach((r, i) => {
+        const serial = total - (start + i);
+
+        // Status color
+        let color;
+        if (r.status === "sent") color = "green";
+        else if (r.status === "pending") color = "orange";
+        else if (r.status === "failed") color = "red";
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${serial}</td>
+            <td>${r.patient_name}</td>
+            <td>
+                <a href="/static/pdf_reports/${encodeURIComponent(r.file_name.split("/").pop())}" target="_blank" class="text-black">
+                    ${r.file_name.split("/").pop()}
+                </a>
+            </td>
+            <td>${r.whatsapp_number}</td>
+            <td>${r.created_at}</td>
+            <td style="color:${color}; font-weight:bold">${r.status}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="resendReport(${r.id}, this)">
+                     Resend
+                </button>  
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    pageInfo.innerText = `Page ${page}`;
+}
+
+// async function resendReport(id) {
+//     if (!confirm("Resend this report?")) return;
+
+//     const res = await fetch(`/resend_report/${id}`, { method: "POST" });
+//     const data = await res.json();
+
+//     alert(data.message);
+//     fetchToday(); // refresh table after resend
+// }
+
+// const form = document.getElementById('upload_form'); // ya 'add_report_form'
+// const submitBtn = document.getElementById('submit_btn');
+
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Processing...'; // optional feedback
+
+    const fd = new FormData(form);
+    const res = await fetch("/add_report", {
+        method: "POST",
+        body: fd
+    });
+
+    const data = await res.json();
+    showSuccessMessage(data.message);
+
+    if (data.status === "success") {
+        form.reset();
+        const newReport = normalizeReport(data.report);
+        reports.unshift(newReport);
+        page = 1;
+        render();
+    }
+
+    // ✅ Optional: enable again if needed
+    submitBtn.disabled = false;
+    submitBtn.innerText = 'Add Report';
+});
+//resend button with disable
+async function resendReport(id, btn) {
+    if (!confirm("Resend this report?")) return;
+
+    btn.disabled = true;      // disable immediately
+    btn.innerText = 'Sending...'; // optional feedback
+
+    try {
+        const res = await fetch(`/resend_report/${id}`, { method: "POST" });
+        const data = await res.json();
+        alert(data.message);
+        fetchToday(); // refresh table
+    } catch (err) {
+        alert("Error sending report. Try again.");
+        btn.disabled = false;  // re-enable if fail
+        btn.innerText = 'Resend';
+    }
+}
+
+</script>
+
+</body>
+</html>

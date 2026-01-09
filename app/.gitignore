@@ -1,0 +1,40 @@
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+*.manifest
+*.spec
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Database
+*.db
+data/database/
+
+# Logs
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Temp files
+*.tmp
+*.temp
+
+# Others
+*.log

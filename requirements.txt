@@ -1,0 +1,13 @@
+
+fastapi
+uvicorn
+python-multipart
+jinja2
+reportlab
+python-docx
+twilio
+sqlalchemy
+pydantic
+python-dotenv
+
+
