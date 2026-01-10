@@ -1,0 +1,35 @@
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment variables
+.env
+
+# VS Code
+.vscode/
+
+# Databases
+data/database/
+*.db
+*.sqlite3
+
+# Uploaded Word files
+data/word_reports/
+
+# Generated PDFs
+static/pdf_reports/
+static/sample.pdf
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
