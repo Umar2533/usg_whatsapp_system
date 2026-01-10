@@ -25,10 +25,7 @@ LOG_DIR = BASE_DIR / "logs"
 for path in [DB_DIR, WORD_REPORTS_DIR, PDF_REPORTS_DIR, LOG_DIR]:
     os.makedirs(path, exist_ok=True)
 
-# Database
-# DATABASE_URL = f"sqlite:///{DB_DIR}/usg.db"
-# DB_PATH = DB_DIR / "usg.db"
-# Database (FINAL)
+
 DB_PATH = BASE_DIR / "data" / "database" / "reports.db"
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
