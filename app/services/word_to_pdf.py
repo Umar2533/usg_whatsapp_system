@@ -1,15 +1,17 @@
 from pathlib import Path
-# from docx2pdf import convert
+from docx import Document
+from reportlab.pdfgen import canvas
 from app.config import PDF_REPORTS_DIR
 from urllib.parse import quote
 from datetime import datetime
 
 def word_to_pdf(word_file_path: str, pdf_path: str = None, patient_name: str = "Patient", safe_name: bool = True):
     """
-    Convert a Word document to PDF with:
+    Convert a Word document (.docx) to PDF using reportlab (Linux / Railway friendly)
+    Adds:
     - Patient name
     - Timestamp
-    - Unique filename (avoids overwriting)
+    - Unique filename
     """
 
     word_path = Path(word_file_path)
@@ -35,15 +37,28 @@ def word_to_pdf(word_file_path: str, pdf_path: str = None, patient_name: str = "
     # Ensure folder exists
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # If file exists (extremely rare, same patient same second)
+    # If file exists (extremely rare)
     counter = 1
     while pdf_path.exists():
         filename = f"{base_filename}_{timestamp}_{counter}.pdf"
         pdf_path = PDF_REPORTS_DIR / filename
         counter += 1
 
-    # Convert Word to PDF
-    convert(str(word_path), str(pdf_path))
+    # Convert Word to PDF using python-docx + reportlab
+    doc = Document(word_path)
+    c = canvas.Canvas(str(pdf_path))
+    y = 800  # start from top of page
+
+    for para in doc.paragraphs:
+        if para.text.strip() == "":
+            continue
+        c.drawString(50, y, para.text)
+        y -= 15  # line spacing
+        if y < 50:
+            c.showPage()
+            y = 800
+
+    c.save()
 
     print(f"[INFO] Converted -> {pdf_path}")
     return str(pdf_path)
