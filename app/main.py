@@ -124,7 +124,6 @@ def summary_counts():
 def format_report_date(created_at: str):
     dt = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
     return dt.strftime("%A, %d %b %Y")
-
 @app.post("/add_report")
 async def add_report(
     background_tasks: BackgroundTasks,
@@ -132,38 +131,55 @@ async def add_report(
     whatsapp_number: str = Form(...),
     word_file: UploadFile = File(...)
 ):
-    # ---------- validations ----------
+    # ---------- Validations ----------
     if not re.match(r"^\+92\d{10}$", whatsapp_number):
-        return JSONResponse({"status": "error", "message": "Invalid WhatsApp number"}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Invalid WhatsApp number"},
+            status_code=400
+        )
 
     if not word_file.filename.lower().endswith(".docx"):
-        return JSONResponse({"status": "error", "message": "Only .docx allowed"}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Only .docx files are allowed"},
+            status_code=400
+        )
 
     created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Save Word temporarily
+    # ---------- Save Word temporarily ----------
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_word:
         shutil.copyfileobj(word_file.file, tmp_word)
         tmp_word_path = tmp_word.name
-    
-    # Generate PDF in static folder
-    PDF_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    pdf_path = word_to_pdf(tmp_word_path, safe_name=True)
+
+    try:
+        # ---------- Generate PDF ----------
+        PDF_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        pdf_path = word_to_pdf(tmp_word_path, safe_name=True)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"PDF generation failed: {str(e)}"}
+        )
+    finally:
+        # Cleanup temporary Word file
+        if os.path.exists(tmp_word_path):
+            os.remove(tmp_word_path)
+
     pdf_filename = os.path.basename(pdf_path)
     safe_filename = quote(pdf_filename)
 
-    # ---------- DB Insert with status ----------
+    # ---------- Database Insert ----------
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO reports (patient_name, file_name, whatsapp_number, created_at, status)
         VALUES (?, ?, ?, ?, ?)
     """, (patient_name, safe_filename, whatsapp_number, created_at, "pending"))
-    report_id = cursor.lastrowid  # <-- for WhatsApp
+    report_id = cursor.lastrowid
     conn.commit()
     conn.close()
 
-    # ---------- Background WhatsApp task ----------
+    # ---------- Background WhatsApp Task ----------
     clean_name = patient_name.strip().upper()
     report_date = format_report_date(created_at)
     background_tasks.add_task(
@@ -171,12 +187,10 @@ async def add_report(
         f"whatsapp:{whatsapp_number}",
         pdf_path,
         report_id,
-        #f" {patient_name} : Your Report  is ready. Thanks for visit 📄"
-        f"*{clean_name}*\n"
-        f"Your medical report dated *{report_date}* is ready.\n"
-        "Thank you for visiting us. 📄"
+        f"*{clean_name}*\nYour medical report dated *{report_date}* is ready.\nThank you for visiting us. 📄"
     )
 
+    # ---------- Return JSON ----------
     return {
         "status": "success",
         "message": f"Report for {patient_name} added successfully",
@@ -189,6 +203,70 @@ async def add_report(
             "status": "pending"
         }
     }
+# @app.post("/add_report")
+# async def add_report(
+#     background_tasks: BackgroundTasks,
+#     patient_name: str = Form(...),
+#     whatsapp_number: str = Form(...),
+#     word_file: UploadFile = File(...)
+# ):
+#     # ---------- validations ----------
+#     if not re.match(r"^\+92\d{10}$", whatsapp_number):
+#         return JSONResponse({"status": "error", "message": "Invalid WhatsApp number"}, status_code=400)
+
+#     if not word_file.filename.lower().endswith(".docx"):
+#         return JSONResponse({"status": "error", "message": "Only .docx allowed"}, status_code=400)
+
+#     created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+#     # Save Word temporarily
+#     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_word:
+#         shutil.copyfileobj(word_file.file, tmp_word)
+#         tmp_word_path = tmp_word.name
+    
+#     # Generate PDF in static folder
+#     PDF_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+#     pdf_path = word_to_pdf(tmp_word_path, safe_name=True)
+#     pdf_filename = os.path.basename(pdf_path)
+#     safe_filename = quote(pdf_filename)
+
+#     # ---------- DB Insert with status ----------
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     cursor.execute("""
+#         INSERT INTO reports (patient_name, file_name, whatsapp_number, created_at, status)
+#         VALUES (?, ?, ?, ?, ?)
+#     """, (patient_name, safe_filename, whatsapp_number, created_at, "pending"))
+#     report_id = cursor.lastrowid  # <-- for WhatsApp
+#     conn.commit()
+#     conn.close()
+
+#     # ---------- Background WhatsApp task ----------
+#     clean_name = patient_name.strip().upper()
+#     report_date = format_report_date(created_at)
+#     background_tasks.add_task(
+#         send_pdf_via_whatsapp,
+#         f"whatsapp:{whatsapp_number}",
+#         pdf_path,
+#         report_id,
+#         #f" {patient_name} : Your Report  is ready. Thanks for visit 📄"
+#         f"*{clean_name}*\n"
+#         f"Your medical report dated *{report_date}* is ready.\n"
+#         "Thank you for visiting us. 📄"
+#     )
+
+#     return {
+#         "status": "success",
+#         "message": f"Report for {patient_name} added successfully",
+#         "report": {
+#             "id": report_id,
+#             "patient_name": patient_name,
+#             "file_name": safe_filename,
+#             "whatsapp_number": whatsapp_number,
+#             "created_at": created_at,
+#             "status": "pending"
+#         }
+#     }
 
 
 from fastapi.responses import PlainTextResponse
