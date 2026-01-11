@@ -1,11 +1,11 @@
 
 
 import sqlite3
-from app.config import DB_PATH
-
+from app.config import DB_PATH_STR
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    return sqlite3.connect(DB_PATH_STR)
+
 
 
 def init_db():
