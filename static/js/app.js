@@ -63,39 +63,38 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ===============================
        ADD REPORT
     =============================== */
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+   form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        msgDiv.style.display = "none";
-        const formData = new FormData(form);
+    const submitBtn = document.getElementById("submit_btn");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Processing...";
 
-        try {
-            const res = await fetch("/add_report", {
-                method: "POST",
-                body: formData
-            });
+    const formData = new FormData(form);
 
-            const result = await res.json();
+    try {
+        const res = await fetch("/add_report", {
+            method: "POST",
+            body: formData
+        });
 
-            if (result.status === "success") {
-                msgDiv.innerText = result.message || "Report added successfully";
-                msgDiv.style.color = "green";
-                msgDiv.style.display = "block";
+        const result = await res.json();
 
-                form.reset();
-                fetchTodayReports();
-            } else {
-                msgDiv.innerText = result.message || "Failed to add report";
-                msgDiv.style.color = "red";
-                msgDiv.style.display = "block";
-            }
-
-        } catch (err) {
-            msgDiv.innerText = "Server error. Try again.";
-            msgDiv.style.color = "red";
-            msgDiv.style.display = "block";
+        if (result.status === "success") {
+            form.reset();
+            fetchTodayReports();
+        } else {
+            alert(result.message || "Failed");
         }
-    });
+
+    } catch (err) {
+        alert("Server error");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Add Report";
+    }
+});
+
 
     // Auto load table
     fetchTodayReports();
