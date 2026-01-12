@@ -603,33 +603,7 @@ function render() {
 // const form = document.getElementById('upload_form'); // ya 'add_report_form'
 // const submitBtn = document.getElementById('submit_btn');
 
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
 
-    submitBtn.disabled = true;
-    submitBtn.innerText = 'Processing...'; // optional feedback
-
-    const fd = new FormData(form);
-    const res = await fetch("/add_report", {
-        method: "POST",
-        body: fd
-    });
-
-    const data = await res.json();
-    showSuccessMessage(data.message);
-
-    if (data.status === "success") {
-        form.reset();
-        const newReport = normalizeReport(data.report);
-        reports.unshift(newReport);
-        page = 1;
-        render();
-    }
-
-    // ✅ Optional: enable again if needed
-    submitBtn.disabled = false;
-    submitBtn.innerText = 'Add Report';
-});
 //resend button with disable
 async function resendReport(id, btn) {
     if (!confirm("Resend this report?")) return;
@@ -649,13 +623,6 @@ async function resendReport(id, btn) {
     }
 }
 
-</script>
-<script>
-  const form = document.getElementById("upload_form");  // Make sure ID same ho
-  form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      // your code
-  });
-</script>
+
 </body>
 </html>
